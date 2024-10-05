@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'HomeContent.dart';
+import 'orders.dart';
+import 'ProfilePage.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
   @override
-  State<HomePage> createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   PageController _pageController = PageController();
+
+  List<Map<String, dynamic>> cartItems = [];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -21,11 +24,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Delivery Man'),
-        backgroundColor: const Color(0xFF652023),
-        automaticallyImplyLeading: false, // Removes the back button
-      ),
+      backgroundColor: const Color.fromARGB(255, 190, 33, 33),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -34,20 +33,20 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
-          FoodRequestPage(),
-          AcceptedOrdersPage(),
+          HomeContent(),
+          OrderPage(deliveryAgentId: 1,),
           ProfilePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.fastfood),
-            label: 'Requests',
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_turned_in),
-            label: 'Accepted Orders',
+            icon: Icon(Icons.receipt_long),
+            label: 'Orders', // Add the Orders menu item
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -55,65 +54,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF652023),
+        selectedItemColor:
+            const Color(0xFF652023), // The color of the selected item
+        unselectedItemColor: Colors.black, // The color of the unselected items
         onTap: _onItemTapped,
       ),
     );
   }
-}
-
-class FoodRequestPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: EdgeInsets.all(10),
-          child: ListTile(
-            leading: Icon(Icons.fastfood, color: const Color(0xFF652023)),
-            title: Text('Food Request ${index + 1}'),
-            subtitle: Text('Details of the request...'),
-            trailing: ElevatedButton(
-              onPressed: () {
-                // Accept request logic
-              },
-              child: Text('Accept'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF652023), // background
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class AcceptedOrdersPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('Accepted Orders Page'),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text('Profile Page'),
-    );
-  }
-}
-
-void main() {
-  runApp(MaterialApp(
-    title: 'Delivery App',
-    theme: ThemeData(
-      primarySwatch: Colors.red,
-    ),
-    home: HomePage(),
-  ));
 }

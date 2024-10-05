@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
-import 'login.dart';
 
+import 'home.dart';
+import 'splashscreen.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async{
+
+   WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+    await WebRTC.initialize();
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      title: 'Flutter Demo',
       theme: ThemeData(
-        primaryColor: const Color.fromARGB(255, 121, 0, 169),
+        primarySwatch: Colors.blue,
       ),
-      home: const LoginPage(),
+      debugShowCheckedModeBanner: false,
+      home: HomePage(),
     );
   }
 }
