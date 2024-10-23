@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-
-import 'home.dart';
-import 'splashscreen.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'splashscreen.dart';
+import 'video_streaming_page.dart';
 
-void main() async{
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter binding is ready before anything else
 
-   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize WebRTC plugin (no changes needed here)
+  await WebRTC.initialize();
+
+  // Run the Flutter app
   runApp(MyApp());
-    await WebRTC.initialize();
 }
 
 class MyApp extends StatelessWidget {
@@ -20,7 +23,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: SplashScreen(), // Initial screen
     );
   }
 }

@@ -1,16 +1,94 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'login.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   final FlutterSecureStorage _storage = FlutterSecureStorage();
+
+  String fullName = '';
+  String phone = '';
+  String email = '';
+  String? profileImageUrl;
+  bool _isLoading = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    String? token = await _storage.read(key: 'token');
+    if (token == null) {
+      // Handle missing token (but do not log out automatically)
+      setState(() {
+        _hasError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    String apiUrl = 'https://e6e4-196-189-16-22.ngrok-free.app/deliveryAgent/profile';
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+
+        setState(() {
+          fullName = userData['fullName'] ?? 'No name provided';
+          phone = userData['phone'] ?? 'No phone provided';
+          email = userData['email'] ?? 'No email provided';
+          profileImageUrl = userData['image'] ?? '';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load profile. Please try again.')),
+        );
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading profile. Please check your connection.')),
+      );
+    }
+  }
 
   Future<void> _logout(BuildContext context) async {
     await _storage.delete(key: 'token');
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
-      (route) => false, // Removes all the previous routes
+      (route) => false,
     );
   }
 
@@ -18,110 +96,62 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Profile',
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit),
-            color: Color(0xFF652023),
-            onPressed: () {
-              // Add edit profile functionality
-            },
-          ),
-        ],
+        title: Text('Profile'),
       ),
-      body: Column(
-        children: [
-          SizedBox(height: 20),
-          CircleAvatar(
-            radius: 45,
-            backgroundImage: AssetImage('assets/4.png'), // Replace with the actual avatar image path
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Yamlak',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            '+251946270789',
-            style: TextStyle(color: Colors.grey),
-          ),
-          SizedBox(height: 20),
-          Expanded(
-            child: ListView(
-              children: [
-                _buildProfileOption(
-                  icon: Icons.location_on,
-                  title: 'Delivery Address',
-                  onTap: () {
-                    // Navigate to delivery address page
-                  },
-                ),
-                _buildProfileOption(
-                  icon: Icons.language,
-                  title: 'Language',
-                  trailing: Text('English', style: TextStyle(color: Colors.grey)),
-                  onTap: () {
-                    // Navigate to language settings page
-                  },
-                ),
-                _buildProfileOption(
-                  icon: Icons.card_giftcard,
-                  title: 'Coupon',
-                  onTap: () {
-                    // Navigate to coupon page
-                  },
-                ),
-                _buildProfileOption(
-                  icon: Icons.account_balance_wallet,
-                  title: 'Wallet',
-                  onTap: () {
-                    // Navigate to wallet page
-                  },
-                ),
-                _buildProfileOption(
-                  icon: Icons.people,
-                  title: 'Referral',
-                  onTap: () {
-                    // Navigate to referral page
-                  },
-                ),
-                _buildProfileOption(
-                  icon: Icons.help,
-                  title: 'Help & Support',
-                  onTap: () {
-                    // Navigate to help & support page
-                  },
-                ),
-                SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () => _logout(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF652023),
-                    ),
-                    child: Text('Logout'),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _hasError
+              ? Center(
+                  child: Text(
+                    'Error loading profile. Please try again later.',
+                    style: TextStyle(color: Colors.red),
                   ),
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(height: 40),
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                                  ? NetworkImage(profileImageUrl!)
+                                  : AssetImage('assets/4.png') as ImageProvider,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              fullName.isNotEmpty ? fullName : 'No name provided',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              phone.isNotEmpty ? phone : 'Phone not provided',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            Text(
+                              email.isNotEmpty ? email : 'Email not provided',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: ElevatedButton(
+                        onPressed: () => _logout(context),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 50),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                        child: Text('Logout'),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileOption({required IconData icon, required String title, Widget? trailing, required Function() onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.black),
-      title: Text(title),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

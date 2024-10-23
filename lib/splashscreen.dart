@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (token == null) {
       _navigateToLogin();
     } else {
-      final url = Uri.parse('https://700f-196-189-17-92.ngrok-free.app/user/sessionlogin');
+      final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/user/sessionlogin');
       final response = await http.post(
         url,
         headers: {'Authorization': 'Bearer $token'},
@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
         decoration: const BoxDecoration(
           color: Color.fromARGB(255, 255, 255, 255),
           image: DecorationImage(
-            image: AssetImage("assets/4.png"),
+            image: AssetImage("assets/pizza.png"),
             fit: BoxFit.cover,
             opacity: 0.4,
           ),
@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image(
-              image: AssetImage('assets/4.png'),
+              image: AssetImage('assets/pizza.png'),
               width: 600,
               height: 400,
             ),

@@ -27,12 +27,15 @@ dependencies:
   uuid: ^3.0.4
   geocoding: ^2.0.0
   geolocator: ^9.0.2
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.1
   lottie: ^1.2.0
   location: ^6.0.2
   agora_rtc_engine: ^5.0.0
   flutter_webrtc: ^0.9.48
   web_socket_channel: ^3.0.1
+  webview_flutter: ^4.0.7
+  flutter_inappwebview: ^5.4.3
+
   
 
 dev_dependencies:

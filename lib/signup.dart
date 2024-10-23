@@ -34,7 +34,7 @@ class _SignupState extends State<Signup> {
   
         
    
-    final url = Uri.parse('https://700f-196-189-17-92.ngrok-free.app/deliveryAgent/signup');
+    final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/deliveryAgent/signup');
 
     try {
       final response = await http.post(

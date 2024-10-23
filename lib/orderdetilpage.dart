@@ -1,24 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'login.dart';
 import 'ordermapscreen.dart';
 
 class OrderDetailsPage extends StatelessWidget {
   final dynamic order;
+  final FlutterSecureStorage _storage = FlutterSecureStorage(); // Secure storage for token
 
-  const OrderDetailsPage({required this.order});
+   OrderDetailsPage({required this.order});
+
+  // Function to handle logout in case of token error
+  Future<void> _logout(BuildContext context) async {
+    await _storage.delete(key: 'token'); // Delete the token from secure storage
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
+    ); // Navigate back to the login page
+  }
 
   // Function to accept the order
   Future<void> acceptOrder(BuildContext context) async {
     final deliveryAgentId = 1; // Replace with the actual delivery agent ID
-    final url = Uri.parse('https://700f-196-189-17-92.ngrok-free.app/deliveryAgent/acceptorder');
+    final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/deliveryAgent/acceptorder');
 
     try {
+      // Retrieve the token from secure storage
+      String? token = await _storage.read(key: 'token');
+
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_TOKEN_HERE', // Add authorization if required
+          'Authorization': 'Bearer $token', // Add token in the authorization header
         },
         body: jsonEncode({
           'orderId': order['id'],
@@ -47,8 +62,14 @@ class OrderDetailsPage extends StatelessWidget {
             );
           },
         );
+      } else if (response.statusCode == 401) {
+        // Token is invalid or expired, logout the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Session expired, please log in again')),
+        );
+        _logout(context);
       } else {
-        // Handle errors
+        // Handle other errors
         print('Failed to accept order: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to accept order. Please try again.')),
@@ -76,7 +97,7 @@ class OrderDetailsPage extends StatelessWidget {
         child: ListView(
           children: [
             Image.network(
-              'https://700f-196-189-17-92.ngrok-free.app${restaurant['image']}',
+              'https://food-delivery-backend-uls4.onrender.com${restaurant['image']}',
               height: 200,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
