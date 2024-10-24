@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
-          (route) => false, // Removes all the previous routes
+          (route) => false, // Removes all previous routes
         );
       } else {
         final responseBody = jsonDecode(response.body);
