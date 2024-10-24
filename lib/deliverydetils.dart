@@ -18,6 +18,7 @@ class DeliveryDetails extends StatefulWidget {
 class _DeliveryDetailsState extends State<DeliveryDetails> {
   String? menuImageUrl;
   bool isLoadingMenu = true;
+  bool isCompletingOrder = false; // Add a flag to track if the order is being completed
   final FlutterSecureStorage _storage = FlutterSecureStorage(); // Secure storage for token
 
   @override
@@ -80,6 +81,10 @@ class _DeliveryDetailsState extends State<DeliveryDetails> {
 
   // Method to mark order as completed by making a POST request
   Future<void> _completeOrder(BuildContext context, String orderId) async {
+    setState(() {
+      isCompletingOrder = true; // Start loading
+    });
+
     final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/orders/compltedorder');
     try {
       // Retrieve the token from secure storage
@@ -110,6 +115,10 @@ class _DeliveryDetailsState extends State<DeliveryDetails> {
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred')));
+    } finally {
+      setState(() {
+        isCompletingOrder = false; // Stop loading
+      });
     }
   }
 
@@ -137,9 +146,7 @@ class _DeliveryDetailsState extends State<DeliveryDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildOrderInfoSection(),
-
               _buildRestaurantInfoSection(),
-
               SizedBox(height: 24),
 
               // Display the Menu Image
@@ -159,6 +166,11 @@ class _DeliveryDetailsState extends State<DeliveryDetails> {
                       style: TextStyle(fontSize: 16, color: Colors.red),
                     ),
                   ),
+                ),
+
+              if (isCompletingOrder) // Show a loading progress bar when completing order
+                Center(
+                  child: CircularProgressIndicator(),
                 ),
             ],
           ),
