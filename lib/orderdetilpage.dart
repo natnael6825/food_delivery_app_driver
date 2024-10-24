@@ -5,11 +5,18 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'login.dart';
 import 'ordermapscreen.dart';
 
-class OrderDetailsPage extends StatelessWidget {
+class OrderDetailsPage extends StatefulWidget {
   final dynamic order;
-  final FlutterSecureStorage _storage = FlutterSecureStorage(); // Secure storage for token
 
-   OrderDetailsPage({required this.order});
+  const OrderDetailsPage({required this.order});
+
+  @override
+  _OrderDetailsPageState createState() => _OrderDetailsPageState();
+}
+
+class _OrderDetailsPageState extends State<OrderDetailsPage> {
+  final FlutterSecureStorage _storage = FlutterSecureStorage(); // Secure storage for token
+  bool isAcceptingOrder = false; // Add a flag to track the order acceptance status
 
   // Function to handle logout in case of token error
   Future<void> _logout(BuildContext context) async {
@@ -22,6 +29,10 @@ class OrderDetailsPage extends StatelessWidget {
 
   // Function to accept the order
   Future<void> acceptOrder(BuildContext context) async {
+    setState(() {
+      isAcceptingOrder = true; // Start showing the loading indicator
+    });
+
     final deliveryAgentId = 1; // Replace with the actual delivery agent ID
     final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/deliveryAgent/acceptorder');
 
@@ -36,32 +47,20 @@ class OrderDetailsPage extends StatelessWidget {
           'Authorization': 'Bearer $token', // Add token in the authorization header
         },
         body: jsonEncode({
-          'orderId': order['id'],
+          'orderId': widget.order['id'],
           'deliveryAgentId': deliveryAgentId,
           'streamingLink': null, // Optional, set this if you have a streaming link
         }),
       );
 
+      setState(() {
+        isAcceptingOrder = false; // Stop showing the loading indicator
+      });
+
       if (response.statusCode == 201) {
-        // Order accepted successfully, show a confirmation dialog
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Order Accepted'),
-              content: Text('The order has been accepted successfully.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                    Navigator.of(context).pop(); // Go back to the previous screen
-                  },
-                  child: Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
+        // Order accepted successfully, pop back to HomeContent with true as the result
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order accepted successfully')));
+        Navigator.pop(context, true); // Pass true to indicate success
       } else if (response.statusCode == 401) {
         // Token is invalid or expired, logout the user
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,14 +68,14 @@ class OrderDetailsPage extends StatelessWidget {
         );
         _logout(context);
       } else {
-        // Handle other errors
-        print('Failed to accept order: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to accept order. Please try again.')),
         );
       }
     } catch (error) {
-      print('Error accepting order: $error');
+      setState(() {
+        isAcceptingOrder = false; // Stop loading on error
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('An error occurred. Please try again.')),
       );
@@ -85,86 +84,103 @@ class OrderDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final restaurant = order['restaurant'];
+    final restaurant = widget.order['restaurant'];
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Order Details'),
         backgroundColor: const Color(0xFF652023),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            Image.network(
-              'https://food-delivery-backend-uls4.onrender.com${restaurant['image']}',
-              height: 200,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset('assets/placeholder.png', height: 200, fit: BoxFit.cover);
-              },
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                // Display the restaurant image from the response directly
+                Image.network(
+                  restaurant['image'], // Use the restaurant's image URL directly
+                  height: 200,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/placeholder.png',
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ); // Fallback image in case of error
+                  },
+                ),
+                SizedBox(height: 16),
+                Text(
+                  restaurant['name'],
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF652023),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Order ID: ${widget.order['id']}',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Quantity: ${widget.order['quantity']}',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Total Price: \$${widget.order['totalPrice']}',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Delivery Address: ${widget.order['address']}',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Status: ${widget.order['status']}',
+                  style: TextStyle(fontSize: 18, color: Colors.green),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderMapScreen(
+                          latitude: double.parse(widget.order['latitude']),
+                          longitude: double.parse(widget.order['longitude']),
+                          restaurantLatitude: restaurant['latitude'],
+                          restaurantLongitude: restaurant['longitude'],
+                          address: widget.order['address'],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text('View on Map'),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    acceptOrder(context); // Start accepting the order
+                  },
+                  child: Text('Accept Order'),
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            Text(
-              restaurant['name'],
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF652023),
+          ),
+          // Show loading progress bar while accepting the order
+          if (isAcceptingOrder)
+            Container(
+              color: Colors.black.withOpacity(0.5), // Semi-transparent background
+              child: Center(
+                child: CircularProgressIndicator(), // Show loading indicator
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Order ID: ${order['id']}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Quantity: ${order['quantity']}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Total Price: \$${order['totalPrice']}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Delivery Address: ${order['address']}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Status: ${order['status']}',
-              style: TextStyle(fontSize: 18, color: Colors.green),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OrderMapScreen(
-                      latitude: double.parse(order['latitude']),
-                      longitude: double.parse(order['longitude']),
-                      restaurantLatitude: restaurant['latitude'],
-                      restaurantLongitude: restaurant['longitude'],
-                      address: order['address'],
-                    ),
-                  ),
-                );
-              },
-              child: Text('View on Map'),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                acceptOrder(context);
-              },
-              child: Text('Accept Order'),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

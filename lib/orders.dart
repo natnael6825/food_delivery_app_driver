@@ -19,13 +19,12 @@ class _OrderPageState extends State<OrderPage> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  final FlutterSecureStorage _storage =
-      FlutterSecureStorage(); // Create instance of FlutterSecureStorage
+  final FlutterSecureStorage _storage = FlutterSecureStorage(); // Create instance of FlutterSecureStorage
 
   @override
   void initState() {
     super.initState();
-    _fetchOrders();
+    _fetchOrders(); // Fetch orders on page load
   }
 
   // Method to handle logout in case of token error
@@ -37,9 +36,9 @@ class _OrderPageState extends State<OrderPage> {
     ); // Navigate back to the login page
   }
 
+  // Fetch orders for the delivery agent
   Future<void> _fetchOrders() async {
-    final url = Uri.parse(
-        'https://e6e4-196-189-16-22.ngrok-free.app/deliveryAgent/getcurrentorders');
+    final url = Uri.parse('https://food-delivery-backend-uls4.onrender.com/deliveryAgent/getcurrentorders');
 
     try {
       // Retrieve the token from secure storage
@@ -104,6 +103,7 @@ class _OrderPageState extends State<OrderPage> {
     }
   }
 
+  // Refresh the order list by re-fetching orders
   Future<void> _refreshOrders() async {
     setState(() {
       _isLoading = true; // Show loading indicator during refresh
@@ -111,24 +111,44 @@ class _OrderPageState extends State<OrderPage> {
     await _fetchOrders(); // Re-fetch orders when pulled down
   }
 
-  void _navigateToDeliveryDetails(
-      BuildContext context, dynamic order, dynamic restaurant) async {
-    // Navigate to DeliveryDetails page and wait for result
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DeliveryDetails(
-          order: order,
-          restaurant: restaurant,
-        ),
-      ),
-    );
+void _navigateToDeliveryDetails(
+  BuildContext context,
+  dynamic order,
+  dynamic restaurant,
+) async {
+  // Ensure latitude and longitude are not null and are converted to double
+  final double? deliveryLatitude = order['latitude'] != null
+      ? double.tryParse(order['latitude'].toString())
+      : null;
+  final double? deliveryLongitude = order['longitude'] != null
+      ? double.tryParse(order['longitude'].toString())
+      : null;
 
-    // If result is true, refresh the orders page
-    if (result == true) {
-      _refreshOrders(); // Refresh the orders after confirming an order
-    }
+  if (deliveryLatitude == null || deliveryLongitude == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Invalid delivery location')),
+    );
+    return;
   }
+
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => DeliveryDetails(
+        order: order,
+        restaurant: restaurant,
+        deliveryLatitude: deliveryLatitude, // Pass the converted latitude
+        deliveryLongitude: deliveryLongitude, // Pass the converted longitude
+      ),
+    ),
+  );
+
+  if (result == true) {
+    _refreshOrders(); // Refresh the orders after confirming an order
+  }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -149,16 +169,14 @@ class _OrderPageState extends State<OrderPage> {
                       final orderData = _orders[index];
                       final order = orderData['order'];
 
-                      final restaurant =
-                          order != null && order.containsKey('restaurant')
-                              ? order['restaurant']
-                              : null;
+                      final restaurant = order != null && order.containsKey('restaurant')
+                          ? order['restaurant']
+                          : null;
 
                       return Card(
                         margin: EdgeInsets.all(10),
                         child: ListTile(
-                          leading: restaurant != null &&
-                                  restaurant['image'] != null
+                          leading: restaurant != null && restaurant['image'] != null
                               ? Image.network(
                                   restaurant['image'], // Use the image URL directly from the API response
                                   width: 50,
@@ -177,10 +195,9 @@ class _OrderPageState extends State<OrderPage> {
                           subtitle: Text(restaurant != null
                               ? 'Restaurant: ${restaurant['name']}'
                               : 'Restaurant info not available'),
-                          trailing: Text('\$${order['totalPrice']}'),
+                          trailing: Text('\$${order['totalPrice'].toStringAsFixed(2)}'),
                           onTap: () {
-                            _navigateToDeliveryDetails(context, order,
-                                restaurant); // Navigate to delivery details page
+                            _navigateToDeliveryDetails(context, order, restaurant); // Navigate to delivery details page
                           },
                         ),
                       );

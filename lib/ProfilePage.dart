@@ -42,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _hasError = false;
     });
 
-    String apiUrl = 'https://e6e4-196-189-16-22.ngrok-free.app/deliveryAgent/profile';
+    String apiUrl = 'https://food-delivery-backend-uls4.onrender.com/deliveryAgent/profile';
     try {
       final response = await http.get(
         Uri.parse(apiUrl),

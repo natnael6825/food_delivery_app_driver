@@ -72,7 +72,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> fetchOrders(double latitude, double longitude) async {
     final url = Uri.parse(
-        'https://e6e4-196-189-16-22.ngrok-free.app/deliveryAgent/nearbyorders');
+        'https://food-delivery-backend-uls4.onrender.com/deliveryAgent/nearbyorders');
 
     try {
       // Retrieve the token from secure storage
@@ -89,7 +89,7 @@ class _HomeContentState extends State<HomeContent> {
           'Authorization': 'Bearer $token', // Send the token in the header
         },
       );
-
+      print(response.body + "-----------");
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body)['orders'];
         setState(() {
@@ -151,7 +151,7 @@ class _HomeContentState extends State<HomeContent> {
     });
 
     final url = Uri.parse(
-        'https://e6e4-196-189-16-22.ngrok-free.app/deliveryAgent/acceptorder');
+        'https://food-delivery-backend-uls4.onrender.com/deliveryAgent/acceptorder');
     try {
       // Retrieve the token from secure storage
       String? token = await _storage.read(key: 'token');
@@ -198,13 +198,17 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  void _showOrderDetails(dynamic order) {
-    Navigator.push(
+  void _showOrderDetails(dynamic order) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => OrderDetailsPage(order: order),
       ),
     );
+
+    if (result == true) {
+      _refreshOrders(); // Refresh orders if the result is true
+    }
   }
 
   @override
@@ -238,11 +242,13 @@ class _HomeContentState extends State<HomeContent> {
                           // Wrapping with ListView to allow pull-to-refresh on empty view
                           children: [
                             Container(
-                              height: MediaQuery.of(context).size.height * 0.8, // Adjust height so message is centered
+                              height: MediaQuery.of(context).size.height *
+                                  0.8, // Adjust height so message is centered
                               child: Center(
                                 child: Text(
                                   'No orders nearby, refresh again in a while.',
-                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.grey),
                                 ),
                               ),
                             ),
@@ -254,8 +260,7 @@ class _HomeContentState extends State<HomeContent> {
                           itemBuilder: (context, index) {
                             final order = orders[index];
                             final restaurant = order['restaurant'];
-                            final imageUrl =
-                                restaurant['image']; // Get image from the restaurant object
+                            final imageUrl = restaurant['image']; // Get image from the restaurant object
 
                             return GestureDetector(
                               onTap: () => _showOrderDetails(order),
@@ -276,10 +281,11 @@ class _HomeContentState extends State<HomeContent> {
                                         width: double.infinity,
                                         errorBuilder: (context, error, stackTrace) {
                                           return Image.asset(
-                                              'assets/placeholder.png',
-                                              height: 120,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity);
+                                            'assets/placeholder.png',
+                                            height: 120,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                          );
                                         },
                                       ),
                                       Padding(
@@ -294,8 +300,7 @@ class _HomeContentState extends State<HomeContent> {
                                         ),
                                       ),
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(horizontal: 8.0),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                         child: ElevatedButton(
                                           onPressed: () => acceptOrder(order['id']),
                                           child: Text('Accept Order'),
